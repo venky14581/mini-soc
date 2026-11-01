@@ -1,0 +1,70 @@
+{
+  "name": "Mini-SOC Lab Detection Coverage",
+  "versions": {
+    "attack": "14",
+    "navigator": "4.5",
+    "layer": "4.5"
+  },
+  "domain": "enterprise-attack",
+  "description": "Mini-SOC custom detection rules and automated response coverage layer",
+  "gradient": {
+    "colors": [
+      "#3b82f6",
+      "#8b5cf6",
+      "#ef4444"
+    ],
+    "minValue": 0,
+    "maxValue": 10
+  },
+  "techniques": [
+    {
+      "techniqueID": "T1046",
+      "score": 8,
+      "color": "#3b82f6",
+      "comment": "Custom Suricata rules (SID 1000001-1000005) detecting SYN, NULL, XMAS, and FIN port scans + SOAR containment",
+      "enabled": true
+    },
+    {
+      "techniqueID": "T1110.001",
+      "score": 10,
+      "color": "#ef4444",
+      "comment": "SSH brute-force detection (SID 1000010) + sliding window correlation + instant iptables auto-block",
+      "enabled": true
+    },
+    {
+      "techniqueID": "T1190",
+      "score": 9,
+      "color": "#ef4444",
+      "comment": "SQL injection (UNION SELECT / Boolean bypass) & Log4j probe detection + SOAR isolation",
+      "enabled": true
+    },
+    {
+      "techniqueID": "T1083",
+      "score": 7,
+      "color": "#8b5cf6",
+      "comment": "Web directory traversal and /etc/passwd disclosure attempt detection",
+      "enabled": true
+    },
+    {
+      "techniqueID": "T1059",
+      "score": 9,
+      "color": "#ef4444",
+      "comment": "Web shell command execution (/bin/sh, bash) inspection and containment",
+      "enabled": true
+    },
+    {
+      "techniqueID": "T1595.002",
+      "score": 6,
+      "color": "#3b82f6",
+      "comment": "Automated scanner user-agents (Nikto, sqlmap, Gobuster) fingerprinting",
+      "enabled": true
+    },
+    {
+      "techniqueID": "T1595",
+      "score": 8,
+      "color": "#10b981",
+      "comment": "Authorized internal scanner auto-tagging and noise suppression playbook",
+      "enabled": true
+    }
+  ]
+}

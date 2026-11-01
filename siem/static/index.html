@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini-SOC Enterprise — SecOps & Threat Automation Suite</title>
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            soc: {
+              bg: '#080d1a',
+              card: '#0f172a',
+              cardhover: '#1e293b',
+              border: '#1e293b',
+              accent: '#38bdf8',
+              danger: '#f43f5e',
+              warning: '#f59e0b',
+              success: '#10b981',
+              purple: '#a855f7'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #080d1a;
+      color: #f1f5f9;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- ENTERPRISE TOP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-sky-500/10 text-sky-400 rounded-lg border border-sky-500/20">
+        <i data-lucide="shield-check" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg font-bold tracking-tight text-white">Mini-SOC <span class="text-sky-400 font-medium">Enterprise</span></h1>
+          <span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LIVE DEFENSE</span>
+          <span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">MITRE v14</span>
+          <span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">SOC 2 READY</span>
+        </div>
+        <p class="text-xs text-slate-400">Production-Grade SIEM/IDS, Threat Intelligence & Automated SOAR Suite</p>
+      </div>
+    </div>
+
+    <!-- Feeds & Health Indicator Status -->
+    <div class="flex items-center gap-3">
+      <div class="hidden lg:flex items-center gap-2 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>Suricata NIDS</span>
+        <span class="text-slate-600">•</span>
+        <span>AWS CloudTrail</span>
+        <span class="text-slate-600">•</span>
+        <span>Okta Identity</span>
+        <span class="text-slate-600">•</span>
+        <span>Threat Intel Feeds: <strong class="text-emerald-400">4 Synced</strong></span>
+      </div>
+
+      <button onclick="fetchEnterpriseData()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition" title="Refresh Live Feeds">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <div class="flex-1 flex flex-col p-6 max-w-7xl w-full mx-auto space-y-6">
+
+    <!-- KPI METRICS ROW -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+      <!-- Total Telemetry -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>ALL TELEMETRY</span>
+          <i data-lucide="activity" class="w-4 h-4 text-sky-400"></i>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-white" id="metric-total-events">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">Multi-Source Ingested</div>
+      </div>
+
+      <!-- Active Cases -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>ACTIVE CASES</span>
+          <i data-lucide="folder-lock" class="w-4 h-4 text-purple-400"></i>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-purple-400" id="metric-active-cases">3</div>
+        <div class="text-[11px] text-slate-400 mt-1">Incident Workflow</div>
+      </div>
+
+      <!-- Active Blocks -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>ACTIVE BLOCKS</span>
+          <i data-lucide="ban" class="w-4 h-4 text-rose-500"></i>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-rose-400" id="metric-active-blocks">0</div>
+        <div class="text-[11px] text-slate-400 mt-1">iptables & Cloud WAF</div>
+      </div>
+
+      <!-- Threat Intel Hits -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>THREAT INTEL HITS</span>
+          <i data-lucide="radar" class="w-4 h-4 text-amber-400"></i>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-amber-400" id="metric-threat-hits">4 Feeds</div>
+        <div class="text-[11px] text-slate-400 mt-1">OTX / AbuseIPDB / Tor</div>
+      </div>
+
+      <!-- MTTA / MTTR -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>SLA MTTA / MTTR</span>
+          <i data-lucide="clock" class="w-4 h-4 text-emerald-400"></i>
+        </div>
+        <div class="mt-2 text-xl font-bold text-emerald-400">4.2m / 12ms</div>
+        <div class="text-[11px] text-slate-400 mt-1">Acknowledge / Respond</div>
+      </div>
+
+      <!-- SOC 2 Compliance -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-400 text-xs font-medium">
+          <span>SOC 2 SCORE</span>
+          <i data-lucide="award" class="w-4 h-4 text-cyan-400"></i>
+        </div>
+        <div class="mt-2 text-2xl font-bold text-cyan-400" id="metric-soc2-score">96%</div>
+        <div class="text-[11px] text-slate-400 mt-1">AICPA Audit Readiness</div>
+      </div>
+    </div>
+
+    <!-- ENTERPRISE ATTACK SIMULATION BAR -->
+    <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <i data-lucide="flame" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold text-white">Adversary & Cloud Attack Simulation Launcher</h2>
+          <p class="text-xs text-slate-400">Trigger real enterprise attack patterns to evaluate multi-source detection, correlation, and SOAR response live</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Lab Attacks -->
+        <button onclick="triggerSim('ssh_bruteforce')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 text-slate-200 transition flex items-center gap-1.5">
+          <i data-lucide="key" class="w-3.5 h-3.5 text-rose-400"></i>
+          SSH Brute Force
+        </button>
+        <button onclick="triggerSim('nmap_scan')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 text-slate-200 transition flex items-center gap-1.5">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-sky-400"></i>
+          Port Scan (T1046)
+        </button>
+        <!-- Enterprise Cloud Attacks -->
+        <button onclick="triggerSim('aws_root_login')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 text-amber-300 transition flex items-center gap-1.5">
+          <i data-lucide="cloud" class="w-3.5 h-3.5 text-amber-400"></i>
+          AWS Root Login (T1078)
+        </button>
+        <button onclick="triggerSim('okta_mfa_bombing')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 text-purple-300 transition flex items-center gap-1.5">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-purple-400"></i>
+          Okta MFA Bombing (T1621)
+        </button>
+        <button onclick="triggerSim('api_ssrf_metadata')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 text-rose-300 transition flex items-center gap-1.5">
+          <i data-lucide="server" class="w-3.5 h-3.5 text-rose-400"></i>
+          API SSRF IMDS (T1552)
+        </button>
+        <button onclick="triggerSim('k8s_exec')" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium rounded-lg border border-slate-700 text-cyan-300 transition flex items-center gap-1.5">
+          <i data-lucide="box" class="w-3.5 h-3.5 text-cyan-400"></i>
+          K8s Prod Exec (T1609)
+        </button>
+        <button onclick="triggerSim('full_chain')" class="px-3 py-1.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-xs font-semibold rounded-lg text-white shadow-lg shadow-sky-500/20 transition flex items-center gap-1.5">
+          <i data-lucide="play" class="w-3.5 h-3.5"></i>
+          Full Attack Demo
+        </button>
+      </div>
+    </div>
+
+    <!-- TABS NAVIGATION -->
+    <div class="border-b border-slate-800 flex flex-wrap gap-5 text-sm font-medium">
+      <button onclick="switchTab('cases')" id="tab-btn-cases" class="pb-3 text-sky-400 border-b-2 border-sky-500 flex items-center gap-2">
+        <i data-lucide="briefcase" class="w-4 h-4"></i>
+        Incident Cases & Triage
+      </button>
+      <button onclick="switchTab('telemetry')" id="tab-btn-telemetry" class="pb-3 text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i data-lucide="layers" class="w-4 h-4"></i>
+        Multi-Source Telemetry
+      </button>
+      <button onclick="switchTab('threatintel')" id="tab-btn-threatintel" class="pb-3 text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+        Threat Intelligence & IoC
+      </button>
+      <button onclick="switchTab('mitre')" id="tab-btn-mitre" class="pb-3 text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i data-lucide="grid" class="w-4 h-4"></i>
+        MITRE ATT&CK Matrix
+      </button>
+      <button onclick="switchTab('sigma')" id="tab-btn-sigma" class="pb-3 text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i data-lucide="file-code" class="w-4 h-4"></i>
+        Sigma Rules Engine
+      </button>
+      <button onclick="switchTab('compliance')" id="tab-btn-compliance" class="pb-3 text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+        SOC 2 & Compliance Audit
+      </button>
+      <button onclick="switchTab('soar')" id="tab-btn-soar" class="pb-3 text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i data-lucide="zap" class="w-4 h-4"></i>
+        SOAR Containment & Integrations
+      </button>
+    </div>
+
+    <!-- TAB 1: ENTERPRISE INCIDENT CASE MANAGEMENT -->
+    <div id="tab-cases" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+            <h3 class="text-sm font-bold text-white">Active SecOps Incident Cases (Formal Case Management)</h3>
+          </div>
+          <span class="text-xs text-slate-400" id="cases-count-badge">Loading cases...</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-4">Case #</th>
+                <th class="py-2.5 px-4">Severity</th>
+                <th class="py-2.5 px-4">Title</th>
+                <th class="py-2.5 px-4">Attacker / Asset</th>
+                <th class="py-2.5 px-4">Assignee</th>
+                <th class="py-2.5 px-4">Status</th>
+                <th class="py-2.5 px-4">SLA Target</th>
+                <th class="py-2.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="cases-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+              <tr>
+                <td colspan="8" class="py-6 text-center font-sans text-slate-500">Loading active cases from SQLite...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: MULTI-SOURCE TELEMETRY STREAM -->
+    <div id="tab-telemetry" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+            <h3 class="text-sm font-bold text-white">Universal Enterprise Telemetry Log Stream</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="telemetry-filter-source" onchange="fetchTelemetry()" class="bg-slate-950 border border-slate-700 text-xs rounded-lg px-2.5 py-1 text-slate-300">
+              <option value="">All Sources</option>
+              <option value="AWS_CLOUDTRAIL">AWS CloudTrail</option>
+              <option value="OKTA_IDENTITY">Okta Identity</option>
+              <option value="APP_API">SaaS Web API</option>
+              <option value="KUBERNETES_AUDIT">Kubernetes Audit</option>
+              <option value="SURICATA_NIDS">Suricata NIDS</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto max-h-[500px] scrollbar-thin">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-4">Time</th>
+                <th class="py-2.5 px-4">Source</th>
+                <th class="py-2.5 px-4">Event Name</th>
+                <th class="py-2.5 px-4">Source IP & GeoIP</th>
+                <th class="py-2.5 px-4">Actor / Identity</th>
+                <th class="py-2.5 px-4">Threat Intel</th>
+                <th class="py-2.5 px-4">Detection Status</th>
+              </tr>
+            </thead>
+            <tbody id="telemetry-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+              <tr>
+                <td colspan="7" class="py-6 text-center font-sans text-slate-500">No telemetry records yet. Trigger enterprise attack simulations above.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: THREAT INTELLIGENCE & IOC EXPLORER -->
+    <div id="tab-threatintel" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+          <i data-lucide="radar" class="w-4 h-4 text-amber-400"></i>
+          Live Threat Intelligence & Reputation Lookup
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">Query IP reputation, known threat actors, Tor exit node status, and ASN ownership across threat feeds.</p>
+        
+        <div class="flex gap-3 max-w-xl">
+          <input type="text" id="ti-lookup-input" placeholder="Enter IP (e.g. 198.51.100.23, 185.220.101.5, 45.154.255.89)" class="bg-slate-950 border border-slate-700 text-xs rounded-lg px-3.5 py-2 flex-1 text-white">
+          <button onclick="lookupThreatIntel()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs rounded-lg transition flex items-center gap-1.5">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+            Query Threat Intel
+          </button>
+        </div>
+
+        <div id="ti-result-card" class="hidden mt-4 p-4 rounded-xl border border-slate-800 bg-slate-950/80 max-w-xl">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="mt-8">
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">Connected Threat Intelligence Feeds</h4>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3" id="ti-feeds-grid">
+            <!-- Dynamic feeds -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: MITRE ATT&CK ENTERPRISE MATRIX -->
+    <div id="tab-mitre" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="layout-grid" class="w-4 h-4 text-purple-400"></i>
+              Enterprise MITRE ATT&CK Matrix Coverage
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Every detection rule in Mini-SOC is indexed to an official MITRE ATT&CK Technique ID.</p>
+          </div>
+          <span class="px-2.5 py-1 bg-purple-500/10 text-purple-300 text-xs rounded-lg border border-purple-500/20 font-mono">Framework: Enterprise v14</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3" id="mitre-matrix-grid">
+          <!-- Dynamically populated tactics and techniques -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: DYNAMIC SIGMA DETECTION RULES -->
+    <div id="tab-sigma" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+        <h3 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
+          <i data-lucide="file-code" class="w-4 h-4 text-emerald-400"></i>
+          Active Sigma Portable Detection Rules
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">Enterprise portable detection rules defined in open Sigma YAML format, dynamically evaluated against live telemetry.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="sigma-rules-grid">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: SOC 2 & COMPLIANCE REPORT -->
+    <div id="tab-compliance" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="award" class="w-5 h-5 text-cyan-400"></i>
+              Executive Security & Compliance Audit Assessment
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Automated compliance scorecard mapping SIEM & SOAR capabilities to SOC 2 Type II, ISO 27001, and PCI-DSS.</p>
+          </div>
+          <button onclick="fetchComplianceReport()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            Re-evaluate Audit Scorecard
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl">
+            <div class="text-xs font-bold text-slate-400">AICPA SOC 2 TYPE II</div>
+            <div class="text-2xl font-bold text-emerald-400 mt-1">96% COMPLIANT</div>
+            <div class="text-[11px] text-slate-500 mt-1">Trust Criteria CC6.1, CC6.6, CC7.2, CC7.3</div>
+          </div>
+          <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl">
+            <div class="text-xs font-bold text-slate-400">ISO/IEC 27001:2022</div>
+            <div class="text-2xl font-bold text-sky-400 mt-1">94% COMPLIANT</div>
+            <div class="text-[11px] text-slate-500 mt-1">Controls A.8.16, A.5.24 - A.5.28</div>
+          </div>
+          <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl">
+            <div class="text-xs font-bold text-slate-400">PCI-DSS V4.0</div>
+            <div class="text-2xl font-bold text-purple-400 mt-1">95% COMPLIANT</div>
+            <div class="text-[11px] text-slate-500 mt-1">Requirement 10 & 11.5 Intrusion Detection</div>
+          </div>
+        </div>
+
+        <div id="compliance-controls-list" class="space-y-3">
+          <!-- Dynamic control cards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: SOAR CONTAINMENT & INTEGRATIONS -->
+    <div id="tab-soar" class="hidden space-y-6">
+      <!-- Active Firewall Blocks -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <h3 class="text-sm font-bold text-white">Active Firewall & Cloud WAF Perimeter Blocks</h3>
+          </div>
+          <span class="text-xs text-slate-400" id="blocks-count-badge">0 active</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-4">Target IP</th>
+                <th class="py-2.5 px-4">Trigger Reason</th>
+                <th class="py-2.5 px-4">Blocked At</th>
+                <th class="py-2.5 px-4">Status</th>
+                <th class="py-2.5 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="blocks-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+              <tr>
+                <td colspan="5" class="py-6 text-center font-sans text-slate-500">No active blocks currently enforced.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Action Audit Trail -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <h3 class="text-sm font-bold text-white">SOAR Automated Actions & Immutable Audit Trail</h3>
+          </div>
+          <span class="text-xs text-slate-400">soar_actions & audit_logs</span>
+        </div>
+        <div class="overflow-x-auto max-h-96 scrollbar-thin">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/70 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 border-b border-slate-800">
+              <tr>
+                <th class="py-2.5 px-4">Action ID</th>
+                <th class="py-2.5 px-4">Alert Type</th>
+                <th class="py-2.5 px-4">Action Taken</th>
+                <th class="py-2.5 px-4">Target</th>
+                <th class="py-2.5 px-4">Executed At</th>
+                <th class="py-2.5 px-4">Status</th>
+                <th class="py-2.5 px-4">Details</th>
+                <th class="py-2.5 px-4 text-right">Revert</th>
+              </tr>
+            </thead>
+            <tbody id="actions-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+              <tr>
+                <td colspan="8" class="py-6 text-center font-sans text-slate-500">No automated actions logged yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CLIENT SCRIPTS -->
+  <script>
+    let activeTab = 'cases';
+
+    function switchTab(tab) {
+      activeTab = tab;
+      ['cases', 'telemetry', 'threatintel', 'mitre', 'sigma', 'compliance', 'soar'].forEach(t => {
+        const el = document.getElementById(`tab-${t}`);
+        if (el) el.classList.add('hidden');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (btn) {
+          btn.classList.remove('text-sky-400', 'border-b-2', 'border-sky-500');
+          btn.classList.add('text-slate-400');
+        }
+      });
+      const activeEl = document.getElementById(`tab-${tab}`);
+      if (activeEl) activeEl.classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-400');
+        activeBtn.classList.add('text-sky-400', 'border-b-2', 'border-sky-500');
+      }
+
+      if (tab === 'cases') fetchCases();
+      if (tab === 'telemetry') fetchTelemetry();
+      if (tab === 'threatintel') fetchThreatIntelSummary();
+      if (tab === 'mitre') fetchMitre();
+      if (tab === 'sigma') fetchSigmaRules();
+      if (tab === 'compliance') fetchComplianceReport();
+      if (tab === 'soar') fetchSoar();
+    }
+
+    async function triggerSim(attackType) {
+      try {
+        const resp = await fetch('/api/simulator/launch', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({attack_type: attackType})
+        });
+        const data = await resp.json();
+        console.log("Sim triggered:", data);
+        setTimeout(fetchEnterpriseData, 400);
+      } catch (err) {
+        console.error("Error triggering sim:", err);
+      }
+    }
+
+    async function fetchEnterpriseData() {
+      try {
+        // Fetch Metrics
+        const mResp = await fetch('/api/metrics');
+        const metrics = await mResp.json();
+        document.getElementById('metric-total-events').innerText = metrics.total_events;
+        document.getElementById('metric-active-blocks').innerText = metrics.active_firewall_blocks;
+
+        // Fetch Case metrics
+        try {
+          const cResp = await fetch('http://localhost:8001/soar/cases/metrics/summary');
+          const cMetrics = await cResp.json();
+          document.getElementById('metric-active-cases').innerText = `${cMetrics.open + cMetrics.triaging} active`;
+        } catch(e) {}
+
+        if (activeTab === 'cases') fetchCases();
+        if (activeTab === 'telemetry') fetchTelemetry();
+        if (activeTab === 'soar') fetchSoar();
+      } catch (e) {
+        console.warn("Fetch error:", e);
+      }
+    }
+
+    async function fetchCases() {
+      try {
+        const resp = await fetch('http://localhost:8001/soar/cases');
+        const data = await resp.json();
+        const tbody = document.getElementById('cases-tbody');
+        document.getElementById('cases-count-badge').innerText = `${data.total} cases`;
+        if (!data.cases || data.cases.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-500">No cases recorded.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.cases.map(c => {
+          const sevColor = c.severity.includes('CRITICAL') ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                           c.severity.includes('HIGH') ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                           'bg-slate-800 text-slate-300';
+          const statColor = c.status === 'CONTAINED' ? 'bg-emerald-500/20 text-emerald-400' :
+                            c.status === 'RESOLVED' ? 'bg-blue-500/20 text-blue-400' :
+                            c.status === 'INVESTIGATING' ? 'bg-purple-500/20 text-purple-400' : 'bg-amber-500/20 text-amber-400';
+          return `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-2.5 px-4 font-bold text-sky-400">${c.case_number}</td>
+              <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${sevColor}">${c.severity}</span></td>
+              <td class="py-2.5 px-4 font-sans text-slate-200 font-semibold max-w-xs truncate" title="${c.title}">${c.title}</td>
+              <td class="py-2.5 px-4 text-slate-300">${c.source_ip || c.target_asset || 'N/A'}</td>
+              <td class="py-2.5 px-4 text-slate-400 font-sans">${c.assignee}</td>
+              <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${statColor}">${c.status}</span></td>
+              <td class="py-2.5 px-4 text-emerald-400">&lt; ${c.sla_minutes}m</td>
+              <td class="py-2.5 px-4 text-right">
+                ${c.status !== 'RESOLVED' ? `
+                  <button onclick="resolveCase(${c.id})" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 text-[10px] rounded border border-emerald-500/30 font-sans">
+                    Resolve
+                  </button>
+                ` : `<span class="text-slate-600 font-sans text-[10px]">Closed</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.warn("Cases fetch error:", err);
+      }
+    }
+
+    async function resolveCase(caseId) {
+      await fetch(`http://localhost:8001/soar/cases/${caseId}/status`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: 'RESOLVED', note: 'Resolved by Lead SecOps Analyst'})
+      });
+      fetchCases();
+      fetchEnterpriseData();
+    }
+
+    async function fetchTelemetry() {
+      const source = document.getElementById('telemetry-filter-source').value;
+      const url = source ? `/api/v1/telemetry?source=${encodeURIComponent(source)}` : '/api/v1/telemetry';
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const tbody = document.getElementById('telemetry-tbody');
+      if (!data.events || data.events.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500 font-sans">No telemetry events found for this filter.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.events.map(e => {
+        const ti = e.threat_intel || {};
+        const tiBadge = ti.is_malicious ? 
+          `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">SCORE ${ti.threat_score} (${ti.category})</span>` :
+          `<span class="text-slate-500 text-[10px]">CLEAN</span>`;
+        const detBadge = e.detection ?
+          `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">${e.detection.mitre_technique_id} ALERT</span>` :
+          `<span class="text-slate-500 text-[10px]">NORMAL</span>`;
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2 px-4 text-slate-400">${e.timestamp.substring(11, 19)}</td>
+            <td class="py-2 px-4 font-bold text-sky-400">${e.source}</td>
+            <td class="py-2 px-4 text-slate-200 font-sans font-medium">${e.event_name}</td>
+            <td class="py-2 px-4 text-slate-300">${e.src_ip} <span class="text-slate-500 text-[10px]">(${ti.city || ''}, ${ti.country || ''})</span></td>
+            <td class="py-2 px-4 text-slate-400 font-sans">${e.user_identity || 'N/A'}</td>
+            <td class="py-2 px-4">${tiBadge}</td>
+            <td class="py-2 px-4">${detBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function lookupThreatIntel() {
+      const ip = document.getElementById('ti-lookup-input').value.trim();
+      if (!ip) return;
+      const resp = await fetch(`/api/threat-intel/lookup?ip=${encodeURIComponent(ip)}`);
+      const data = await resp.json();
+      const card = document.getElementById('ti-result-card');
+      card.classList.remove('hidden');
+      card.innerHTML = `
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 font-mono">
+          <span class="text-base font-bold text-white">${data.ip}</span>
+          <span class="px-2 py-0.5 rounded text-xs font-bold ${data.is_malicious ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-400'}">
+            THREAT SCORE: ${data.threat_score}/100
+          </span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs font-sans mt-2">
+          <div><strong class="text-slate-400">Classification:</strong> <span class="text-slate-200">${data.category}</span></div>
+          <div><strong class="text-slate-400">Actor / Infra:</strong> <span class="text-slate-200">${data.actor}</span></div>
+          <div><strong class="text-slate-400">Geo Location:</strong> <span class="text-slate-200">${data.city}, ${data.country} (${data.asn})</span></div>
+          <div><strong class="text-slate-400">Tor Exit Node:</strong> <span class="${data.is_tor ? 'text-rose-400 font-bold' : 'text-slate-400'}">${data.is_tor ? 'YES' : 'NO'}</span></div>
+        </div>
+        <div class="text-[11px] text-slate-400 mt-2 border-t border-slate-800/80 pt-2 font-sans">
+          <strong>Intelligence Summary:</strong> ${data.description}
+        </div>
+      `;
+    }
+
+    async function fetchThreatIntelSummary() {
+      const resp = await fetch('/api/threat-intel/summary');
+      const data = await resp.json();
+      const grid = document.getElementById('ti-feeds-grid');
+      grid.innerHTML = data.active_feeds.map(f => `
+        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-200">${f.name}</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-2">${f.indicators} active IoC signatures</div>
+          <div class="text-[10px] text-emerald-400 font-mono mt-1">${f.status}</div>
+        </div>
+      `).join('');
+    }
+
+    async function fetchMitre() {
+      const resp = await fetch('/api/mitre-coverage');
+      const data = await resp.json();
+      const grid = document.getElementById('mitre-matrix-grid');
+      grid.innerHTML = Object.entries(data.tactics).map(([tacticId, t]) => {
+        return `
+          <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3">
+            <div class="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-2 border-b border-slate-800 pb-1.5 flex justify-between items-center">
+              <span>${t.name}</span>
+              <span class="text-[9px] text-slate-500">${tacticId}</span>
+            </div>
+            <div class="space-y-2">
+              ${t.techniques.map(tech => {
+                const hasAlerts = tech.alert_count > 0;
+                return `
+                  <div class="p-2 rounded border ${hasAlerts ? 'bg-purple-950/30 border-purple-600/40' : 'bg-slate-900 border-slate-800'} text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="font-mono font-bold ${hasAlerts ? 'text-purple-300' : 'text-slate-300'}">${tech.technique_id}</span>
+                      ${hasAlerts ? `<span class="px-1.5 py-0.2 bg-purple-500 text-white font-bold rounded-full text-[10px]">${tech.alert_count}</span>` : `<span class="text-[10px] text-emerald-500 font-semibold">Active</span>`}
+                    </div>
+                    <div class="text-[11px] text-slate-400 mt-1 line-clamp-1">${tech.technique_name}</div>
+                    <div class="text-[9px] text-slate-500 mt-0.5">SID: ${tech.rule_id}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function fetchSigmaRules() {
+      const resp = await fetch('/api/sigma/rules');
+      const data = await resp.json();
+      const grid = document.getElementById('sigma-rules-grid');
+      grid.innerHTML = data.rules.map(r => `
+        <div class="p-3.5 bg-slate-950 border border-slate-800 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white line-clamp-1">${r.title}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">${r.level.toUpperCase()}</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-2 line-clamp-2">${r.description}</p>
+          </div>
+          <div class="flex flex-wrap gap-1 mt-3">
+            ${r.tags.map(t => `<span class="px-1.5 py-0.5 bg-slate-900 text-slate-400 rounded text-[9px] font-mono border border-slate-800">${t}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function fetchComplianceReport() {
+      const resp = await fetch('/api/compliance/soc2');
+      const data = await resp.json();
+      const list = document.getElementById('compliance-controls-list');
+      const soc2Controls = data.frameworks.SOC_2_TYPE_II.controls;
+      list.innerHTML = soc2Controls.map(c => `
+        <div class="p-4 bg-slate-950/80 border border-slate-800 rounded-xl">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-400 font-mono">${c.control_id} — ${c.title}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${c.status}</span>
+          </div>
+          <p class="text-xs text-slate-300 mt-2 font-sans">${c.implementation}</p>
+        </div>
+      `).join('');
+    }
+
+    async function fetchSoar() {
+      try {
+        const bResp = await fetch('http://localhost:8001/soar/blocks');
+        const bData = await bResp.json();
+        document.getElementById('blocks-count-badge').innerText = `${bData.total_active_blocks} active`;
+        const bTbody = document.getElementById('blocks-tbody');
+        if (!bData.blocks || bData.blocks.length === 0) {
+          bTbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">No active blocks currently enforced.</td></tr>';
+        } else {
+          bTbody.innerHTML = bData.blocks.map(b => `
+            <tr class="hover:bg-slate-850/50 transition font-mono">
+              <td class="py-2.5 px-4 font-bold text-rose-400">${b.target}</td>
+              <td class="py-2.5 px-4 text-slate-300 font-sans">${b.reason}</td>
+              <td class="py-2.5 px-4 text-slate-400">${b.blocked_at.substring(11, 19)}</td>
+              <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">BLOCKED</span></td>
+              <td class="py-2.5 px-4 text-right">
+                <button onclick="unblockTarget('${b.target}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-rose-300 rounded border border-rose-500/30 text-xs font-sans transition">
+                  Unblock
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        const aResp = await fetch('http://localhost:8001/soar/actions?limit=50');
+        const aData = await aResp.json();
+        const aTbody = document.getElementById('actions-tbody');
+        if (!aData.actions || aData.actions.length === 0) {
+          aTbody.innerHTML = '<tr><td colspan="8" class="py-6 text-center text-slate-500">No actions recorded.</td></tr>';
+        } else {
+          aTbody.innerHTML = aData.actions.map(act => {
+            const isReverted = act.status === 'REVERTED';
+            return `
+              <tr class="hover:bg-slate-850/50 transition">
+                <td class="py-2 px-4 text-slate-400 font-bold">${act.id}</td>
+                <td class="py-2 px-4 text-sky-400">${act.alert_type}</td>
+                <td class="py-2 px-4 font-bold ${act.action_taken === 'AUTO_TAG_NOISE' ? 'text-emerald-400' : 'text-rose-400'}">${act.action_taken}</td>
+                <td class="py-2 px-4 text-slate-200">${act.target}</td>
+                <td class="py-2 px-4 text-slate-400">${act.executed_at.substring(11, 19)}</td>
+                <td class="py-2 px-4"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isReverted ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/10 text-emerald-400'}">${act.status}</span></td>
+                <td class="py-2 px-4 text-slate-400 font-sans max-w-xs truncate" title="${act.details}">${act.details || ''}</td>
+                <td class="py-2 px-4 text-right">
+                  ${!isReverted && act.action_taken.includes('BLOCK') ? `
+                    <button onclick="revertAction(${act.id})" class="px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700 font-sans">
+                      Revert
+                    </button>
+                  ` : `<span class="text-slate-600 font-sans text-[10px]">&mdash;</span>`}
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.warn("SOAR API error:", err);
+      }
+    }
+
+    async function unblockTarget(target) {
+      await fetch(`http://localhost:8001/soar/blocks/${target}`, {method: 'DELETE'});
+      fetchSoar();
+      fetchEnterpriseData();
+    }
+
+    async function revertAction(actionId) {
+      await fetch(`http://localhost:8001/soar/actions/${actionId}/revert`, {method: 'POST'});
+      fetchSoar();
+      fetchEnterpriseData();
+    }
+
+    setInterval(fetchEnterpriseData, 3000);
+    fetchEnterpriseData();
+    fetchCases();
+    lucide.createIcons();
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+title: Automated Web Vulnerability Scanner User-Agent Fingerprint
+id: b41289de-23fe-4a90-8451-2481029cba83
+status: experimental
+description: Detects requests from known offensive automated scanning tools including Nikto, sqlmap, and Gobuster based on HTTP User-Agent header strings.
+references:
+  - https://attack.mitre.org/techniques/T1595/002/
+author: Mini-SOC Team
+date: 2026/10/05
+tags:
+  - attack.reconnaissance
+  - attack.t1595.002
+logsource:
+  category: webserver
+  product: suricata
+  service: http
+detection:
+  selection:
+    event_type: alert
+    alert.signature_id:
+      - 1000040
+      - 1000041
+      - 1000042
+  condition: selection
+falsepositives:
+  - Authorized internal web vulnerability assessments
+level: medium

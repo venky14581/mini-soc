@@ -1,0 +1,25 @@
+title: Rapid SSH Failed Authentication Brute Force
+id: 9a7e6b21-4d3f-42e8-9102-fa331908bc01
+status: experimental
+description: Detects multiple failed SSH authentication attempts from a single source within a short time window, indicating password guessing or automated dictionary attacks.
+references:
+  - https://attack.mitre.org/techniques/T1110/001/
+author: Mini-SOC Team
+date: 2026/10/05
+tags:
+  - attack.credential_access
+  - attack.t1110.001
+logsource:
+  category: network_connection
+  product: suricata
+  service: ssh
+detection:
+  selection:
+    event_type: alert
+    alert.signature_id: 1000010
+  timeframe: 60s
+  condition: selection | count(src_ip) >= 5
+falsepositives:
+  - Legitimate automated backup scripts with expired credentials
+  - Admin fat-fingering credentials repeatedly
+level: critical

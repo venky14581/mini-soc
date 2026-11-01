@@ -1,0 +1,154 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secops
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mini-soc-config
+  namespace: secops
+data:
+  SOAR_URL: "http://mini-soc-soar.secops.svc.cluster.local:8001/soar/webhook"
+  SOAR_API_BASE: "http://mini-soc-soar.secops.svc.cluster.local:8001/soar"
+  FIREWALL_MODE: "auto"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mini-soc-secrets
+  namespace: secops
+type: Opaque
+stringData:
+  SOAR_SHARED_SECRET: "mini-soc-secure-webhook-token-2026"
+  SOAR_ANALYST_TOKEN: "analyst-token-secret"
+  MINI_SOC_INGEST_API_KEY: "enterprise-shipper-token-9988"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mini-soc-data-pvc
+  namespace: secops
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mini-soc-siem
+  namespace: secops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mini-soc-siem
+  template:
+    metadata:
+      labels:
+        app: mini-soc-siem
+    spec:
+      containers:
+        - name: siem
+          image: mini-soc:latest
+          command: ["uvicorn", "siem.api:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: mini-soc-config
+            - secretRef:
+                name: mini-soc-secrets
+          volumeMounts:
+            - name: data-volume
+              mountPath: /app/data
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: mini-soc-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mini-soc-soar
+  namespace: secops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mini-soc-soar
+  template:
+    metadata:
+      labels:
+        app: mini-soc-soar
+    spec:
+      containers:
+        - name: soar
+          image: mini-soc:latest
+          command: ["uvicorn", "soar.automation:app", "--host", "0.0.0.0", "--port", "8001"]
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: mini-soc-config
+            - secretRef:
+                name: mini-soc-secrets
+          volumeMounts:
+            - name: data-volume
+              mountPath: /app/data
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: mini-soc-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mini-soc-siem
+  namespace: secops
+spec:
+  selector:
+    app: mini-soc-siem
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mini-soc-soar
+  namespace: secops
+spec:
+  selector:
+    app: mini-soc-soar
+  ports:
+    - port: 8001
+      targetPort: 8001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mini-soc-ingress
+  namespace: secops
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - soc.company.internal
+      secretName: soc-tls-cert
+  rules:
+    - host: soc.company.internal
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mini-soc-siem
+                port:
+                  number: 8000

@@ -1,0 +1,73 @@
+# %YAML 1.1
+---
+# Suricata Configuration File for Mini-SOC Lab
+
+default-rule-path: /etc/suricata/rules
+rule-files:
+  - local.rules
+
+vars:
+  address-groups:
+    HOME_NET: "[172.28.0.0/16,192.168.0.0/16,10.0.0.0/8,127.0.0.1/32]"
+    EXTERNAL_NET: "!$HOME_NET"
+    HTTP_SERVERS: "$HOME_NET"
+    SSH_SERVERS: "$HOME_NET"
+  port-groups:
+    HTTP_PORTS: "80,8080,8000,5000"
+    SSH_PORTS: "22,2222"
+
+stats:
+  enabled: yes
+  interval: 10sec
+
+outputs:
+  - fast:
+      enabled: yes
+      filename: fast.log
+      append: yes
+
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      community-id: yes
+      community-id-seed: 0
+      types:
+        - alert:
+            payload: yes
+            payload-buffer-size: 4kb
+            payload-printable: yes
+            packet: yes
+            metadata: yes
+            http-body: yes
+            tagged-packets: yes
+        - http:
+            extended: yes
+        - dns:
+            version: 2
+        - tls:
+            extended: yes
+        - ssh
+        - stats:
+            totals: yes
+            threads: no
+            deltas: no
+        - flow
+
+app-layer:
+  protocols:
+    tls:
+      enabled: yes
+      detection-ports:
+        dp: 443
+    http:
+      enabled: yes
+      memcap: 64mb
+    ssh:
+      enabled: yes
+
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes

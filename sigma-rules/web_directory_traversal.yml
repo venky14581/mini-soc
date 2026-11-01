@@ -1,0 +1,28 @@
+title: Web Path Traversal and Sensitive File Access Attempt
+id: 5f102839-a9c2-498b-bc11-e63d421890fa
+status: experimental
+description: Detects directory traversal patterns (e.g., ../ sequences targeting /etc/passwd or system configuration files) in HTTP queries.
+references:
+  - https://attack.mitre.org/techniques/T1083/
+  - https://attack.mitre.org/techniques/T1190/
+author: Mini-SOC Team
+date: 2026/10/05
+tags:
+  - attack.discovery
+  - attack.t1083
+  - attack.initial_access
+  - attack.t1190
+logsource:
+  category: webserver
+  product: suricata
+  service: http
+detection:
+  selection:
+    event_type: alert
+    alert.signature_id:
+      - 1000022
+      - 1000023
+  condition: selection
+falsepositives:
+  - Documentation files referencing relative file paths
+level: high

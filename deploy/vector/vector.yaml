@@ -1,0 +1,61 @@
+# ==============================================================================
+# Vector (by Datadog) Configuration for Mini-SOC Log Shipping
+# High-throughput, memory-safe log aggregator and forwarder
+# ==============================================================================
+
+sources:
+  # 1. Ingest Docker / Container logs
+  docker_logs:
+    type: docker
+    include_containers: ["nginx", "api-gateway", "auth-service", "checkout-api"]
+
+  # 2. Ingest Host Syslog & Audit logs
+  syslog_source:
+    type: file
+    include: ["/var/log/auth.log", "/var/log/secure", "/var/log/syslog"]
+    read_from: beginning
+
+  # 3. Ingest Suricata IDS eve.json
+  suricata_source:
+    type: file
+    include: ["/var/log/suricata/eve.json"]
+    read_from: end
+
+transforms:
+  # Parse JSON events from Suricata
+  parse_suricata:
+    type: remap
+    inputs: ["suricata_source"]
+    source: |
+      . = parse_json!(string!(.message))
+
+  # Format application logs into Mini-SOC Ingestion Schema
+  format_for_mini_soc:
+    type: remap
+    inputs: ["docker_logs", "syslog_source"]
+    source: |
+      .source = "APP_API"
+      .event_name = "CONTAINER_APP_LOG"
+      .src_ip = get!(., ["client_ip"]) ?? "0.0.0.0"
+      .user_identity = get!(., ["user_id"]) ?? "anonymous"
+      .target_resource = get!(., ["container_name"]) ?? "unknown_pod"
+      .action_status = if (to_int(get!(., ["status"]) ?? 200) >= 400) { "FAILURE" } else { "SUCCESS" }
+      .raw_event = .
+
+sinks:
+  # Ship transformed batches to Mini-SOC Ingestion Gateway API
+  mini_soc_sink:
+    type: http
+    inputs: ["format_for_mini_soc"]
+    uri: "http://mini-soc-siem:8000/api/v1/ingest/batch"
+    method: "post"
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Bearer ${MINI_SOC_INGEST_API_KEY}"
+    encoding:
+      codec: "json"
+    batch:
+      max_bytes: 1048576 # 1MB
+      timeout_secs: 2
+    request:
+      retry_attempts: 5

@@ -1,0 +1,26 @@
+title: Web Application SQL Injection Attempt
+id: e4b29107-1823-4f91-8931-dae1948123cc
+status: experimental
+description: Detects SQL injection syntax patterns (UNION SELECT, boolean tautology ' OR '1'='1) within HTTP request URIs directed at web servers.
+references:
+  - https://attack.mitre.org/techniques/T1190/
+author: Mini-SOC Team
+date: 2026/10/05
+tags:
+  - attack.initial_access
+  - attack.t1190
+logsource:
+  category: webserver
+  product: suricata
+  service: http
+detection:
+  selection:
+    event_type: alert
+    alert.signature_id:
+      - 1000020
+      - 1000021
+  condition: selection
+falsepositives:
+  - Security scanning or pen-testing with prior authorization
+  - Unusually named documents containing SQL terms
+level: high

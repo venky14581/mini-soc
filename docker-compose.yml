@@ -1,0 +1,98 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Suricata Network Intrusion Detection System (IDS)
+  # ----------------------------------------------------------------------------
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: mini-soc-suricata
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    network_mode: "host" # Sniffs host / bridge interface directly
+    volumes:
+      - ./suricata/suricata.yaml:/etc/suricata/suricata.yaml:ro
+      - ./suricata/rules:/etc/suricata/rules:ro
+      - suricata-logs:/var/log/suricata
+    command: -c /etc/suricata/suricata.yaml -i eth0
+
+  # ----------------------------------------------------------------------------
+  # 2. Mini-SOC SIEM & Correlation Engine + Analyst Dashboard
+  # ----------------------------------------------------------------------------
+  siem:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mini-soc-siem
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - SOAR_URL=http://soar:8001/soar/webhook
+      - SOAR_API_BASE=http://soar:8001/soar
+      - SOAR_SHARED_SECRET=mini-soc-secure-webhook-token-2026
+      - EVE_JSON_PATH=/var/log/suricata/eve.json
+    volumes:
+      - suricata-logs:/var/log/suricata:ro
+    networks:
+      isolated_lab_net:
+        ipv4_address: 172.28.0.30
+    depends_on:
+      - soar
+    command: ["uvicorn", "siem.api:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  # ----------------------------------------------------------------------------
+  # 3. Mini-SOC SOAR Automation Service (iptables block + webhook execution)
+  # ----------------------------------------------------------------------------
+  soar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mini-soc-soar
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - SOAR_SHARED_SECRET=mini-soc-secure-webhook-token-2026
+      - FIREWALL_MODE=auto
+      - SOAR_DB_PATH=/app/data/soar_actions.db
+    volumes:
+      - soar-data:/app/data
+    networks:
+      isolated_lab_net:
+        ipv4_address: 172.28.0.40
+    command: ["uvicorn", "soar.automation:app", "--host", "0.0.0.0", "--port", "8001"]
+
+  # ----------------------------------------------------------------------------
+  # 4. Isolated Vulnerable Lab Target VM/Container
+  # ----------------------------------------------------------------------------
+  lab-target:
+    build:
+      context: ./lab/target
+      dockerfile: Dockerfile
+    container_name: mini-soc-target
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "2222:22"
+    networks:
+      isolated_lab_net:
+        ipv4_address: 172.28.0.10
+
+volumes:
+  suricata-logs:
+  soar-data:
+
+networks:
+  isolated_lab_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
